@@ -1,0 +1,27 @@
+# ---- LedgerGuard backend image ----
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Install dependencies for all workspaces
+COPY package.json package-lock.json* ./
+COPY shared/package.json shared/package.json
+COPY backend/package.json backend/package.json
+COPY frontend/package.json frontend/package.json
+RUN npm ci --ignore-scripts || npm install
+
+# Copy sources and build shared + backend
+COPY shared ./shared
+COPY backend ./backend
+RUN npm run build --workspace shared && npm run build --workspace backend
+
+# ---- Runtime image ----
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/backend ./backend
+COPY --from=builder /app/node_modules ./node_modules
+
+EXPOSE 4000
+CMD ["node", "backend/dist/server.js"]

@@ -1,0 +1,15 @@
+--- config ---
+    adminPassword: process.env.DEV_ADMIN_PASSWORD ?? '123456',
+--- seed ---
+  if (existing?.passwordHash && (await verifyPassword(input.password, existing.passwordHash))) {
+    // Stored hash already matches the configured credential — keep it as-is.
+    passwordHash = existing.passwordHash as string;
+--- login ---
+    setPassword(account.password);
+      { tenantId: DEFAULT_TENANT_ID, email: account.email, password: account.password } satisfies LoginPayload,
+                  Password: <span className="font-mono">{account.password}</span>
+--- api ---
+  TENANT_NOT_FOUND: 'Workspace not found. Check your workspace identifier and try again.',
+  INVALID_CREDENTIALS: 'Invalid email or password.',
+  401: 'Invalid email or password.',
+  404: 'Workspace not found, or login service is unavailable.',

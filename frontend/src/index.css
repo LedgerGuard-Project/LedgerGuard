@@ -1,0 +1,52 @@
+@tailwind base;
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@tailwind components;
+
+.body-bg {
+  @apply bg-ink-50 text-ink-900 antialiased dark:bg-ink-950 dark:text-ink-100;
+}
+.scrollbar {
+  @apply h-2 w-2;
+}
+.scrollbar-thumb {
+  @apply rounded-full bg-ink-300 dark:bg-ink-700;
+}
+.card {
+  @apply rounded-xl border border-ink-200 bg-white shadow-card dark:border-ink-800 dark:bg-ink-900;
+}
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+}
+.btn-primary {
+  @apply btn bg-brand-600 text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-ink-950;
+}
+.btn-secondary {
+  @apply btn border border-ink-200 bg-white text-ink-700 hover:bg-ink-50 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-200 dark:hover:bg-ink-700;
+}
+.btn-ghost {
+  @apply btn text-ink-500 hover:bg-ink-100 hover:text-ink-800 dark:hover:bg-ink-800 dark:hover:text-ink-100;
+}
+.input {
+  @apply w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 placeholder-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-100;
+}
+.label {
+  @apply mb-1.5 block text-sm font-medium text-ink-700 dark:text-ink-300;
+}
+.badge {
+  @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold;
+}
+.nav-link {
+  @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900 dark:text-ink-300 dark:hover:bg-ink-800 dark:hover:text-white;
+}
+.nav-link-active {
+  @apply bg-brand-50 text-brand-700 hover:bg-brand-50 hover:text-brand-700 dark:bg-brand-950/60 dark:text-brand-300 dark:hover:bg-brand-950/60 dark:hover:text-brand-300;
+}
+.stat-label {
+  @apply text-xs font-medium uppercase tracking-wide text-ink-500 dark:text-ink-400;
+}
+
+@tailwind utilities;
