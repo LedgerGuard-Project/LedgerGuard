@@ -13,12 +13,19 @@ export default defineConfig({
       '@ledgerguard/shared': fileURLToPath(new URL('../shared/src/index.ts', import.meta.url)),
     },
   },
-  server: {
+    server: {
     port: 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:4000',
         changeOrigin: true,
+      },
+      // Forward Socket.IO handshake + upgrades so realtime events reach the backend in dev.
+      '/socket.io': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        ws: true,
+        secure: false,
       },
     },
   },

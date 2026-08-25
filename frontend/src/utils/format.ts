@@ -8,6 +8,12 @@ export function formatCurrency(value: number, currency = 'USD'): string {
   }
 }
 
+/** Format an integer minor-unit amount (e.g. cents) as a currency string. */
+export function formatMinor(minor: number, currency = 'USD'): string {
+  const major = Number(minor) / 100;
+  return formatCurrency(major, currency);
+}
+
 export function formatNumber(value: number): string {
   try {
     return new Intl.NumberFormat('en-US').format(Number(value));

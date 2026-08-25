@@ -1,5 +1,5 @@
-import Redis from 'ioredis';
 import { config } from '../config';
+import { redisService } from '../services/redis/RedisService';
 import { logger } from '../utils/logger';
 
 export interface KeyValueStore {
@@ -31,45 +31,11 @@ class MemoryStore implements KeyValueStore {
   }
 }
 
-/** Redis-backed store used when Redis is enabled. */
-class RedisStore implements KeyValueStore {
-  private client: Redis | null = null;
-
-  async connect(): Promise<boolean> {
-    try {
-      this.client = new Redis(config.redisUrl, {
-        lazyConnect: true,
-        maxRetriesPerRequest: 1,
-        enableOfflineQueue: false,
-      });
-      await this.client.connect();
-      logger.info('Redis cache connected');
-      return true;
-    } catch (err) {
-      logger.warn('Redis unavailable, falling back to in-memory cache', { err });
-      this.client?.disconnect();
-      this.client = null;
-      return false;
-    }
-  }
-
-  async set(key: string, value: string, ttlSeconds: number): Promise<void> {
-    if (!this.client) return;
-    await this.client.setex(key, ttlSeconds, value);
-  }
-
-  async get(key: string): Promise<string | null> {
-    if (!this.client) return null;
-    const val = await this.client.get(key);
-    return val ?? null;
-  }
-
-  async del(key: string): Promise<void> {
-    if (!this.client) return;
-    await this.client.del(key);
-  }
-}
-
+/**
+ * Cache facade. Uses the shared RedisService when Redis is enabled and
+ * connected; otherwise transparently falls back to an in-memory store so the
+ * platform keeps working offline.
+ */
 class Cache implements KeyValueStore {
   private store: KeyValueStore;
 
@@ -77,26 +43,38 @@ class Cache implements KeyValueStore {
     this.store = new MemoryStore();
   }
 
+  /** Called once at boot. Returns the effective store kind. */
   async init(): Promise<void> {
     if (!config.redisEnabled) {
       logger.info('Redis disabled; using in-memory cache');
       return;
     }
-    const redis = new RedisStore();
-    const ok = await redis.connect();
-    if (ok) this.store = redis;
+    const status = await redisService.connect();
+    if (status === 'connected') {
+      logger.info('Cache backed by Redis');
+    } else {
+      logger.error('Redis connection unavailable; falling back to in-memory cache');
+    }
   }
 
-  set(key: string, value: string, ttlSeconds: number): Promise<void> {
-    return this.store.set(key, value, ttlSeconds);
+  async set(key: string, value: string, ttlSeconds: number): Promise<void> {
+    const ok = await redisService.set(key, value, ttlSeconds);
+    if (!ok) await this.store.set(key, value, ttlSeconds);
   }
 
-  get(key: string): Promise<string | null> {
+  async get(key: string): Promise<string | null> {
+    if (redisService.isAvailable) {
+      const value = await redisService.get(key);
+      if (value !== null) return value;
+    }
     return this.store.get(key);
   }
 
-  del(key: string): Promise<void> {
-    return this.store.del(key);
+  async del(key: string): Promise<void> {
+    if (redisService.isAvailable) {
+      await redisService.delete(key);
+    }
+    await this.store.del(key);
   }
 }
 

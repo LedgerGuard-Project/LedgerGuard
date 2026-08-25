@@ -5,14 +5,36 @@ services:
     image: mongo:7
     container_name: ledgerguard-mongo
     restart: unless-stopped
+    command: [mongod, "--replSet", "rs0", "--bind_ip_all"]
+    # LedgerGuard's dev configuration expects the single-node replica set on
+    # host port 27018 (see backend/.env MONGO_URI). Phase 2 ACID transactions
+    # require replSet rs0.
     ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin}
-      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME:-ledgerguard}
+      - "27018:27017"
+    # NOTE: no root credentials here on purpose. Local dev connects without
+    # auth (backend/.env has no credentials), and TenantConnectionManager
+    # builds per-tenant URIs by naive path concatenation, which would break if
+    # authSource query params had to be carried through. Enable auth + update
+    # both connection paths together when hardening for production.
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  mongo-init:
+    image: mongo:7
+    container_name: ledgerguard-mongo-init
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: >
+      mongosh --host mongo:27017 --eval
+      "try { rs.status() } catch (e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'localhost:27018'}]}) }"
 
   redis:
     image: redis:7-alpine
@@ -34,7 +56,11 @@ services:
       - backend/.env.example
     environment:
       NODE_ENV: production
-      MONGO_URI: mongodb://admin:admin@mongo:27017/ledgerguard?authSource=admin
+      # directConnection=true: rs0's single member is registered as
+      # 'localhost:27018' so host-side dev clients resolve it; a topology-
+      # discovering connection from inside this container would be redirected
+      # to that unreachable name. Direct mode still supports transactions.
+      MONGO_URI: mongodb://mongo:27017/ledgerguard_global?directConnection=true
       REDIS_URL: redis://redis:6379
       PORT: 4000
     ports:

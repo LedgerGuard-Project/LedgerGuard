@@ -9,6 +9,9 @@ import {
   Settings,
   User,
   Menu,
+  Receipt,
+  Bell,
+  Scale,
   type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -25,8 +28,11 @@ interface NavItem {
 }
 
 function buildNav(role: UserRole | undefined): NavItem[] {
-  const items: NavItem[] = [
+    const items: NavItem[] = [
     { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard, roles: [] },
+        { name: 'Billing', to: '/billing', icon: Receipt, roles: [] },
+        { name: 'Reconciliation', to: '/billing/reconciliation', icon: Scale, roles: [UserRole.FinanceManager] },
+    { name: 'Notifications', to: '/billing/notifications', icon: Bell, roles: [] },
     { name: 'Team', to: '/team', icon: Users, roles: [UserRole.CompanyAdmin] },
     { name: 'Organizations', to: '/organizations', icon: Building, roles: [UserRole.SuperAdmin] },
     { name: 'Profile', to: '/profile', icon: User, roles: [] },

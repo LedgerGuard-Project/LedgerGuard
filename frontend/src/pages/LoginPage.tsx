@@ -18,12 +18,12 @@ import type { LoginPayload } from '../services/auth.service';
 const DEFAULT_TENANT_ID = 'ledgerguard-platform';
 
 /** Demo accounts surfaced on the login page (kept in sync with backend/seed.ts).
- * All demo accounts share the same "123456" password. Clicking any card
+ * All demo accounts share the same "Admin@123" password. Clicking any card
  * auto-fills AND submits a real backend login (never a fake frontend session). */
 const DEMO_ACCOUNTS = [
-  { label: 'Admin', email: 'admin@ledgerguard.com', password: '123456' },
-  { label: 'Manager', email: 'manager@ledgerguard.com', password: '123456' },
-  { label: 'Viewer', email: 'viewer@ledgerguard.com', password: '123456' },
+  { label: 'Admin', email: 'admin@ledgerguard.com', password: 'Admin@123' },
+  { label: 'Manager', email: 'manager@ledgerguard.com', password: 'Admin@123' },
+  { label: 'Viewer', email: 'viewer@ledgerguard.com', password: 'Admin@123' },
 ] as const;
 
 export const LoginPage = () => {

@@ -5,6 +5,7 @@ export enum UserRole {
   SuperAdmin = 'super_admin',
   CompanyAdmin = 'company_admin',
   FinanceManager = 'finance_manager',
+  Accountant = 'accountant',
   Viewer = 'viewer',
 }
 
@@ -35,6 +36,7 @@ export const ROLE_WEIGHT: Record<UserRole, number> = {
   [UserRole.SuperAdmin]: 100,
   [UserRole.CompanyAdmin]: 60,
   [UserRole.FinanceManager]: 40,
+  [UserRole.Accountant]: 30,
   [UserRole.Viewer]: 10,
 };
 

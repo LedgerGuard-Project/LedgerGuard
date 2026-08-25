@@ -1,6 +1,7 @@
 import { Schema, type Connection, type Document, type Model, type Types } from 'mongoose';
 import { UserRole, type UserStatus, type User } from '@ledgerguard/shared';
 import { hashPassword } from '../security/password';
+import { createBillingModels, type BillingModels } from '../models/billing';
 
 export interface TenantUserDocument extends Omit<User, 'id' | 'createdAt' | 'updatedAt'>, Document {
   _id: Types.ObjectId;
@@ -12,6 +13,8 @@ export interface TenantUserDocument extends Omit<User, 'id' | 'createdAt' | 'upd
 export interface TenantModels {
   /** Per-tenant scoped User model. */
   User: Model<TenantUserDocument>;
+  /** Phase 2 billing/ledger models bound to the same tenant connection. */
+  billing: BillingModels;
 }
 
 /** Detect already-hashed bcrypt values (cost 04-31) so pre-save never re-hashes them. */
@@ -21,64 +24,66 @@ function isBcryptHash(value: string): boolean {
 
 /** Build tenant-scoped models bound to a dedicated per-tenant connection. */
 export function createTenantModels(connection: Connection): TenantModels {
-  if (connection.models['TenantUser']) {
-    return {
-      User: connection.models['TenantUser'] as Model<TenantUserDocument>,
-    };
-  }
+  const userModel: Model<TenantUserDocument> | undefined = connection.models['TenantUser']
+    ? (connection.models['TenantUser'] as Model<TenantUserDocument>)
+    : undefined;
 
-  const userSchema = new Schema<TenantUserDocument>(
-    {
-      name: { type: String, required: true, trim: true, maxlength: 120 },
-      email: {
-        type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
-        trim: true,
-        index: true,
+  if (!userModel) {
+    const userSchema = new Schema<TenantUserDocument>(
+      {
+        name: { type: String, required: true, trim: true, maxlength: 120 },
+        email: {
+          type: String,
+          required: true,
+          unique: true,
+          lowercase: true,
+          trim: true,
+          index: true,
+        },
+        passwordHash: { type: String, required: true },
+        role: { type: String, enum: Object.values(UserRole), default: UserRole.Viewer },
+        tenantId: { type: String, required: true },
+        status: {
+          type: String,
+          enum: ['active', 'invited', 'disabled'],
+          default: 'active',
+        },
+        lastLoginAt: { type: Date },
       },
-      passwordHash: { type: String, required: true },
-      role: { type: String, enum: Object.values(UserRole), default: UserRole.Viewer },
-      tenantId: { type: String, required: true },
-      status: {
-        type: String,
-        enum: ['active', 'invited', 'disabled'],
-        default: 'active',
-      },
-      lastLoginAt: { type: Date },
-    },
-    {
-      timestamps: true,
-      toJSON: {
-        virtuals: true,
-        versionKey: false,
-        transform: (_doc: any, ret: any): unknown => {
-          ret.id = String(ret._id);
-          delete ret._id;
-          delete ret.passwordHash;
-          delete ret.__v;
-          return ret;
+      {
+        timestamps: true,
+        toJSON: {
+          virtuals: true,
+          versionKey: false,
+          transform: (_doc: unknown, ret: Record<string, unknown>): unknown => {
+            ret.id = String(ret._id);
+            delete ret._id;
+            delete ret.passwordHash;
+            delete ret.__v;
+            return ret;
+          },
         },
       },
-    },
-  );
+    );
 
-  userSchema.pre('save', async function preSave(next) {
-    if (this.isModified('passwordHash') && this.passwordHash) {
-      // Skip values that are already bcrypt hashes to avoid double-hashing.
-      if (!isBcryptHash(this.passwordHash)) {
-        this.passwordHash = await hashPassword(this.passwordHash);
+    userSchema.pre('save', async function preSave(next) {
+      if (this.isModified('passwordHash') && this.passwordHash) {
+        // Skip values that are already bcrypt hashes to avoid double-hashing.
+        if (!isBcryptHash(this.passwordHash)) {
+          this.passwordHash = await hashPassword(this.passwordHash);
+        }
       }
-    }
-    next();
-  });
+      next();
+    });
 
-  const modelName = 'TenantUser';
-  // Avoid double-compiling the same connection when hot-reloading.
-  const UserModel = connection.models[modelName]
-    ? (connection.models[modelName] as import('mongoose').Model<TenantUserDocument>)
-    : connection.model<TenantUserDocument>(modelName, userSchema);
+    const modelName = 'TenantUser';
+    // Avoid double-compiling the same connection when hot-reloading.
+    connection.model<TenantUserDocument>(modelName, userSchema);
+  }
 
-  return { User: UserModel };
+  const User = connection.models['TenantUser'] as Model<TenantUserDocument>;
+  return {
+    User,
+    billing: createBillingModels(connection),
+  };
 }

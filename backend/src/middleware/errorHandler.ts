@@ -1,7 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import type { ApiResponse } from '@ledgerguard/shared';
 import { ApiError } from '../utils/ApiError';
-import { config } from '../config';
 import { logger } from '../utils/logger';
 
 /** Central error handler. Always returns the standard ApiResponse envelope. */
@@ -49,9 +48,7 @@ export function errorHandler(
     error: { code, message, ...(details !== undefined ? { details } : {}) },
   };
 
-  if (config.env === 'development' && statusCode >= 500 && err instanceof Error) {
-    payload.error!.details = payload.error!.details ?? { stack: err.stack };
-  }
-
+  // Never expose stack traces, DB URIs or internal details to API clients —
+  // diagnostics go to the server logs only (logError above).
   res.status(statusCode).json(payload);
 }

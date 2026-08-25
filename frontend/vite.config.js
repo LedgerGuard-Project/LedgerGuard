@@ -19,6 +19,13 @@ export default defineConfig({
                 target: 'http://localhost:4000',
                 changeOrigin: true,
             },
+            // Forward Socket.IO handshake + upgrades so realtime events reach the backend in dev.
+            '/socket.io': {
+                target: 'http://localhost:4000',
+                changeOrigin: true,
+                ws: true,
+                secure: false,
+            },
         },
     },
     build: {
