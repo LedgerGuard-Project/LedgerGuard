@@ -5,6 +5,9 @@ import tenantRoutes from './tenant.routes';
 import dashboardRoutes from './dashboard.routes';
 import billingRoutes from './billing.routes';
 import devRoutes from './dev.routes';
+import analyticsRoutes from './analytics.routes';
+import alertsRoutes from './alerts.routes';
+import reportCenterRoutes from './reportCenter.routes';
 import { config } from '../config';
 import { redisService } from '../services/redis/RedisService';
 
@@ -36,6 +39,9 @@ router.use('/users', userRoutes);
 router.use('/tenants', tenantRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/billing', billingRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/alerts', alertsRoutes);
+router.use('/reports', reportCenterRoutes);
 router.use('/dev', devRoutes);
 
 export default router;

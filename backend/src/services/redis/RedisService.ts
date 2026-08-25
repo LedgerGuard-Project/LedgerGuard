@@ -165,6 +165,21 @@ class RedisService {
     const result = await this.client.eval(script, 1, key, token);
     return result === 1;
   }
+
+  /** Delete all keys matching a glob pattern (analytics cache invalidation). */
+  async invalidatePattern(pattern: string): Promise<number> {
+    if (!this.client || !this.isAvailable) return 0;
+    let cursor = '0';
+    let deleted = 0;
+    do {
+      const [next, keys] = await this.client.scan(cursor, 'MATCH', pattern, 'COUNT', 200);
+      cursor = next;
+      if (keys.length > 0) {
+        deleted += await this.client.del(...keys);
+      }
+    } while (cursor !== '0');
+    return deleted;
+  }
 }
 
 export const redisService = new RedisService();
