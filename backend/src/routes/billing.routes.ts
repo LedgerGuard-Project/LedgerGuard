@@ -24,6 +24,8 @@ import * as creditNoteController from '../controllers/billing/creditNote.control
 import * as debitNoteController from '../controllers/billing/debitNote.controller';
 import * as approvalController from '../controllers/billing/approval.controller';
 import * as financialPeriodController from '../controllers/billing/financialPeriod.controller';
+import * as exceptionController from '../controllers/billing/exception.controller';
+import * as billingRulesController from '../controllers/billing/billingRules.controller';
 import { APPROVAL_RESOURCE_TYPES } from '@ledgerguard/shared';
 
 const router = Router();
@@ -319,5 +321,64 @@ router.patch('/notifications/read-all', notificationController.markAll);
   // ---- Invoice PDF ----
   router.get('/invoices/:invoiceId/pdf', invoicePdfController.downloadPdf);
   router.get('/invoices/:invoiceId/pdf/html', invoicePdfController.downloadPdf);
+
+  // ---- Payment / Reconciliation Exceptions ----
+  const createExceptionSchema = z.object({
+    type: z.enum([
+      'unmatched_payment',
+      'duplicate_payment',
+      'failed_payment',
+      'partial_payment',
+      'amount_mismatch',
+      'unknown_customer',
+      'unknown_invoice',
+      'timeout',
+      'webhook_mismatch',
+      'status_mismatch',
+    ]),
+    severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+    paymentId: z.string().max(80).optional(),
+    invoiceId: z.string().max(80).optional(),
+    customerId: z.string().max(80).optional(),
+    bankTransactionId: z.string().max(80).optional(),
+    amountMinor: z.number().int().nonnegative(),
+    currency: currencyEnum,
+    reason: z.string().min(1).max(1000),
+    slaHours: z.number().positive().max(24 * 30).optional(),
+  });
+  const resolveExceptionSchema = z.object({
+    resolution: z.string().min(3).max(2000),
+    ignore: z.boolean().optional(),
+  });
+  const reopenExceptionSchema = z.object({
+    reason: z.string().min(3).max(1000),
+  });
+
+  router.get('/exceptions', exceptionController.list);
+  router.get('/exceptions/:exceptionId', exceptionController.detail);
+  router.post('/exceptions', requireRole(UserRole.FinanceManager), validate(createExceptionSchema), exceptionController.create);
+  router.post('/exceptions/:exceptionId/assign', requireRole(UserRole.FinanceManager), validate(z.object({})), exceptionController.assign);
+  router.post('/exceptions/:exceptionId/investigate', requireRole(UserRole.FinanceManager), exceptionController.investigate);
+  router.post('/exceptions/:exceptionId/resolve', requireRole(UserRole.FinanceManager), validate(resolveExceptionSchema), exceptionController.resolve);
+  router.post('/exceptions/:exceptionId/reopen', requireRole(UserRole.FinanceManager), validate(reopenExceptionSchema), exceptionController.reopen);
+
+  // ---- Billing Rules Engine ----
+  const createRuleSchema = z.object({
+    name: z.string().min(1).max(160),
+    type: z.enum(['discount', 'tax_override', 'minimum_charge', 'maximum_charge', 'grace_period', 'late_fee']),
+    priority: z.number().int().nonnegative().default(0),
+    effectiveFrom: z.string().optional(),
+    effectiveTo: z.string().optional(),
+    conditions: z.array(z.object({ field: z.string(), operator: z.string(), value: z.string() })).optional(),
+    action: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+  });
+  const setRuleStatusSchema = z.object({ status: z.enum(['active', 'disabled']) });
+
+  router.get('/billing-rules', billingRulesController.list);
+  router.get('/billing-rules/:ruleId', billingRulesController.detail);
+  router.post('/billing-rules', requireRole(UserRole.FinanceManager), validate(createRuleSchema), billingRulesController.create);
+  router.patch('/billing-rules/:ruleId', requireRole(UserRole.FinanceManager), validate(createRuleSchema.partial()), billingRulesController.patch);
+  router.post('/billing-rules/:ruleId/status', requireRole(UserRole.FinanceManager), validate(setRuleStatusSchema), billingRulesController.setStatus);
+  router.post('/billing-rules/:ruleId/duplicate', requireRole(UserRole.FinanceManager), billingRulesController.duplicate);
 
 export default router;

@@ -3,6 +3,8 @@ import type { Response as ExpressResponse } from 'express';
 import type { AuthenticatedRequest } from '../types';
 import { asyncHandler } from '../utils/asyncHandler';
 import { authenticate } from '../middleware/auth';
+import { requireRole } from '../middleware/requireRole';
+import { UserRole } from '@ledgerguard/shared';
 import { rangeQuerySchema } from '../services/analytics/dates';
 import * as metrics from '../services/analytics/metrics.service';
 import * as insights from '../services/analytics/insights.service';
@@ -93,13 +95,13 @@ router.get('/anomalies', authenticate, asyncHandler(async (req: Req, res: Expres
   res.json({ success: true, data: { items } });
 }));
 
-router.post('/anomalies/detect', authenticate, asyncHandler(async (req: Req, res: ExpressResponse) => {
+router.post('/anomalies/detect', authenticate, requireRole(UserRole.FinanceManager), asyncHandler(async (req: Req, res: ExpressResponse) => {
   const ctx = insightCtx(req);
   const summary = await insights.runAnomalyDetection(ctx);
   res.json({ success: true, data: summary });
 }));
 
-router.patch('/anomalies/:anomalyId', authenticate, asyncHandler(async (req: Req, res: ExpressResponse) => {
+router.patch('/anomalies/:anomalyId', authenticate, requireRole(UserRole.FinanceManager), asyncHandler(async (req: Req, res: ExpressResponse) => {
   const ctx = insightCtx(req);
   const action = String(req.body?.action ?? '');
   if (!['reviewed', 'acknowledged', 'dismissed'].includes(action)) {

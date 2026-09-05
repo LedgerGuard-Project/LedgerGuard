@@ -56,6 +56,19 @@ export type {
   ApprovalStatus,
   FinancialPeriod,
   FinancialPeriodStatusInfo,
+  PaymentException,
+  ExceptionType,
+  ExceptionSeverity,
+  ExceptionStatus,
+  SlaStatus,
+  ApiKey,
+  ApiKeyCreated,
+  ApiKeyPermission,
+  WebhookEndpoint,
+  WebhookDelivery,
+  WebhookDeliveryStatus,
+  WebhookEventType,
+  WebhookDeliveryPayload,
 } from '@ledgerguard/shared';
 
 export {

@@ -10,6 +10,8 @@ export interface ApiError {
   code: string;
   message: string;
   details?: unknown;
+  /** Correlation ID for tracing an error back to its request (Phase 4, Part 12/14). */
+  requestId?: string;
 }
 
 export interface PaginatedResult<T> {

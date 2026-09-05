@@ -26,6 +26,7 @@ import { postLedgerGroup } from './ledger.service';
 import { serializeAccount, serializeInvoice, serializeTransaction } from './serializers';
 import { createNotification } from './notification.service';
 import { writeAudit } from '../audit.service';
+import { dispatchWebhookEvent } from './webhook.service';
 import { emitTenantEvent } from '../../sockets/eventBus';
 import { AuditAction } from '@ledgerguard/shared';
 import { logger } from '../../utils/logger';
@@ -457,6 +458,15 @@ async function runChargeTransaction(
       currency: ctx.currency,
       reference,
     });
+    // Webhook fan-out is fire-and-forget and never affects payment outcome.
+    void dispatchWebhookEvent(models, tenantId, 'payment.completed', {
+      transactionId,
+      customerId: customer.customerId,
+      invoiceId: input.invoiceId,
+      amountMinor: ctx.amountMinor,
+      currency: ctx.currency,
+      reference,
+    });
     emitTenantEvent(tenantId, SOCKET_EVENTS.ledgerUpdated, {
       transactionId,
       tenantId,
@@ -514,6 +524,15 @@ async function runChargeTransaction(
         reason: err instanceof Error ? err.message : String(err),
       },
     );
+    if (!rolledBack) {
+      void dispatchWebhookEvent(models, tenantId, 'payment.failed', {
+        transactionId,
+        customerId: customer.customerId,
+        invoiceId: input.invoiceId,
+        amountMinor: ctx.amountMinor,
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
     await writeAudit({
       tenantId,
       actorId: actor.id,

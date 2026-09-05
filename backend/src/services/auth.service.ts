@@ -17,6 +17,11 @@ import {
   getTenantByCompany,
   getTenantUserModel,
 } from './tenant.service';
+import {
+  isAccountLocked,
+  recordFailedLogin,
+  clearFailedLogins,
+} from '../middleware/authRateLimit';
 import type { TenantDocument } from '../models/Tenant';
 import type { TenantUserDocument } from '../database/models.factory';
 import { logger } from '../utils/logger';
@@ -104,9 +109,23 @@ export async function login(
     throw ApiError.forbidden('This organization is no longer active', 'ORG_SUSPENDED');
   }
 
+  // Progressive-delay / soft lockout (degrades gracefully without Redis).
+  // The same generic error is thrown whether locked or not — no account
+  // enumeration.
+  const locked = await isAccountLocked(tenant.tenantId, input.email);
+  if (locked) {
+    logger.warn('Login blocked by lockout', {
+      tenantId: tenant.tenantId,
+      email: input.email,
+      ip: meta.ip,
+    });
+    throw ApiError.unauthorized('Invalid credentials', 'INVALID_CREDENTIALS');
+  }
+
   const models = await getTenantUserModel(tenant);
   const user = await models.User.findOne({ email: input.email.toLowerCase() });
   if (!user) {
+    await recordFailedLogin(tenant.tenantId, input.email);
     throw ApiError.unauthorized('Invalid credentials', 'INVALID_CREDENTIALS');
   }
   if (user.status === 'disabled') {
@@ -115,8 +134,12 @@ export async function login(
 
   const ok = await verifyPassword(input.password, user.passwordHash);
   if (!ok) {
+    await recordFailedLogin(tenant.tenantId, input.email);
     throw ApiError.unauthorized('Invalid credentials', 'INVALID_CREDENTIALS');
   }
+
+  // Successful authentication — clear any prior lockout state.
+  await clearFailedLogins(tenant.tenantId, input.email);
 
   user.lastLoginAt = new Date().toISOString();
   await user.save();

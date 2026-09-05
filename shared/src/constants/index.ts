@@ -92,4 +92,73 @@ export const SOCKET_EVENTS = {
   debitNoteCreated: 'debit_note:created',
   financialPeriodClosed: 'financial_period:closed',
   financialPeriodReopened: 'financial_period:reopened',
+  // ---- Enterprise extension ----
+  exceptionCreated: 'exception:created',
+  exceptionUpdated: 'exception:updated',
+  webhookDelivered: 'webhook:delivered',
+  webhookFailed: 'webhook:failed',
+  subscriptionUpdated: 'subscription:updated',
+  jobFailed: 'job:failed',
 } as const;
+
+/**
+ * SLA policy (hours) per operational work item type. Configurable defaults —
+ * tenants may override per exception via `dueAt` at creation time.
+ */
+export const DEFAULT_SLA_HOURS: Record<string, number> = {
+  payment_exception: 4,
+  reconciliation: 24,
+  approval: 8,
+  webhook_failure: 2,
+  failed_payment: 4,
+  overdue_invoice: 48,
+};
+
+/** SLA evaluation: share of the budget elapsed before a task is "at risk". */
+export const SLA_AT_RISK_RATIO = 0.75;
+
+export const EXCEPTION_TYPE_LABELS: Record<string, string> = {
+  unmatched_payment: 'Unmatched Payment',
+  duplicate_payment: 'Duplicate Payment',
+  failed_payment: 'Failed Payment',
+  partial_payment: 'Partial Payment',
+  amount_mismatch: 'Amount Mismatch',
+  unknown_customer: 'Unknown Customer',
+  unknown_invoice: 'Unknown Invoice',
+  timeout: 'Timeout',
+  webhook_mismatch: 'Webhook Mismatch',
+  status_mismatch: 'Status Mismatch',
+};
+
+export const BILLING_RULE_TYPE_LABELS: Record<string, string> = {
+  discount: 'Discount',
+  tax_override: 'Tax Override',
+  minimum_charge: 'Minimum Charge',
+  maximum_charge: 'Maximum Charge',
+  grace_period: 'Grace Period',
+  late_fee: 'Late Fee',
+};
+
+export const COMMUNICATION_EVENT_LABELS: Record<string, string> = {
+  'invoice.sent': 'Invoice Sent',
+  'payment.confirmation': 'Payment Confirmation',
+  'payment.failed': 'Payment Failure',
+  'payment.reminder': 'Payment Reminder',
+  'overdue.reminder': 'Overdue Reminder',
+  'subscription.renewal': 'Subscription Renewal',
+  'credit_note.notification': 'Credit Note',
+  'refund.notification': 'Refund',
+  'system.notification': 'System Notification',
+};
+
+export const DEFAULT_BILLING_RULES: Array<{
+  name: string;
+  type: string;
+  action: Record<string, string | number | boolean>;
+  priority: number;
+}> = [
+  { name: 'Standard 10% early discount', type: 'discount', action: { percent: 10 }, priority: 10 },
+  { name: 'Default 18% tax', type: 'tax_override', action: { percent: 18 }, priority: 10 },
+  { name: 'Minimum invoice $5', type: 'minimum_charge', action: { amountMinor: 500 }, priority: 20 },
+  { name: '30-day net terms grace', type: 'grace_period', action: { days: 30 }, priority: 20 },
+];

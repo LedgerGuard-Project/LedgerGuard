@@ -72,16 +72,27 @@ router.delete('/:reportConfigId', authenticate, requireRole(UserRole.FinanceMana
 
 // ---- CSV export (records history; synchronous generation is bounded by limits).
 
+/**
+ * Escape a single CSV cell value:
+ * - Quote fields containing commas, quotes, or newlines.
+ * - Prevent formula injection in spreadsheet viewers by prefixing
+ *   cells starting with =, +, -, @, TAB, or CR with a single quote.
+ */
+function escapeCsvValue(v: unknown): string {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  const needsQuote = /["',\n\r]/.test(s);
+  let escaped = s.replace(/"/g, '""');
+  if (needsQuote) escaped = '"' + escaped + '"';
+  if (/^[=+\-@*\t\r]/.test(s)) escaped = "'" + escaped;
+  return escaped;
+}
+
 function toCsv(rows: Array<Record<string, unknown>>): string {
   if (rows.length === 0) return '';
   const headers = Object.keys(rows[0]);
-  const escape = (v: unknown): string => {
-    const s = v === null || v === undefined ? '' : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  return [headers.join(','), ...rows.map((r) => headers.map((h) => escape(r[h])).join(','))].join('\n');
+  return [headers.join(','), ...rows.map((r) => headers.map((h) => escapeCsvValue(r[h])).join(','))].join('\n');
 }
-
 async function buildRows(
   ctx: ReturnType<typeof insightCtx>,
   reportType: ReportType,

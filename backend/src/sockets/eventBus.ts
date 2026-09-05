@@ -14,6 +14,11 @@ export function isSocketsReady(): boolean {
   return io !== null;
 }
 
+/** Direct server reference for observability (health checks). Null before attach. */
+export function getIo(): Server | null {
+  return io;
+}
+
 /** Emit to everyone inside a tenant room — financial events never leave the tenant. */
 export function emitTenantEvent(tenantId: string, event: string, payload: unknown): void {
   if (!io) return;

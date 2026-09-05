@@ -4,6 +4,8 @@ import type { BillingModels } from '../../models/billing';
 import { ApiError } from '../../utils/ApiError';
 import { newInvoiceId, newReference } from '../../utils/ids';
 import { getCustomerByKey } from './customer.service';
+import { dispatchWebhookEvent } from './webhook.service';
+import { applyBillingRules } from './billingRules.service';
 import { computeInvoiceTotals, type InvoiceLineInput } from './invoice.totals';
 
 export interface CreateInvoiceInput {
@@ -53,24 +55,48 @@ export async function createInvoice(
     );
   }
 
-  return models.Invoice.create({
+  // ---- Server-side billing rules must be the only authority on totals ----
+  const ruleResult = await applyBillingRules(models, tenantId, {
+    customerId: customer.customerId,
+    currency: input.currency.toUpperCase(),
+    subtotalMinor: totals.subtotalMinor,
+    taxMinor: totals.taxMinor,
+    discountMinor: totals.discountMinor,
+  });
+  const dueInDays = ruleResult.graceDays;
+  const dueDate = input.dueDate
+    ? new Date(input.dueDate)
+    : new Date(Date.now() + dueInDays * 24 * 60 * 60 * 1000);
+
+  const invoice = await models.Invoice.create({
     invoiceId: newInvoiceId(),
     tenantId,
     customerId: customer.customerId,
     invoiceNumber: await nextInvoiceNumber(models, tenantId),
     items: totals.items,
     subtotalMinor: totals.subtotalMinor,
-    taxMinor: totals.taxMinor,
-    discountMinor: totals.discountMinor,
-    totalMinor: totals.totalMinor,
+    taxMinor: ruleResult.taxMinor,
+    discountMinor: ruleResult.discountMinor,
+    totalMinor: ruleResult.totalMinor,
     currency: input.currency.toUpperCase(),
     status: input.status ?? 'draft',
     issueDate: input.issueDate ? new Date(input.issueDate) : new Date(),
-    dueDate: input.dueDate
-      ? new Date(input.dueDate)
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    dueDate,
     notes: input.notes?.trim(),
+    metadata: ruleResult.effects.length > 0 ? { rulesApplied: ruleResult.effects } : undefined,
   });
+
+  // Webhook fan-out (fire-and-forget; never blocks or fails invoice creation).
+  void dispatchWebhookEvent(models, tenantId, 'invoice.created', {
+    invoiceId: invoice.invoiceId,
+    invoiceNumber: invoice.invoiceNumber,
+    customerId: invoice.customerId,
+    status: invoice.status,
+    totalMinor: invoice.totalMinor,
+    currency: invoice.currency,
+  });
+
+  return invoice;
 }
 
 export async function listInvoices(

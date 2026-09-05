@@ -1,5 +1,4 @@
 import { randomBytes } from 'crypto';
-
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
 function randomToken(length: number): string {
@@ -31,6 +30,24 @@ export const newCreditNoteId = () => newId('CRN');
 export const newDebitNoteId = () => newId('DBN');
 export const newApprovalId = () => newId('APR');
 export const newPeriodId = () => newId('PRD');
+export const newExceptionId = () => newId('EXC');
+export const newWebhookEndpointId = () => newId('WHE');
+export const newWebhookDeliveryId = () => newId('WHD');
+export const newApiKeyId = () => newId('KEY');
+export const newBillingRuleId = () => newId('RUL');
+export const newCommunicationId = () => newId('COM');
+export const newSavedViewId = () => newId('VEW');
+export const newEvidenceId = () => newId('EVD');
+
+/** Idempotent webhook event ID, e.g. evt_9f2a7b3c1d5e. */
+export function newWebhookEventId(): string {
+  return `evt_${randomToken(12)}`;
+}
+
+/** High-entropy webhook signing secret. */
+export function newWebhookSecret(): string {
+  return `whsec_${randomBytes(24).toString('hex')}`;
+}
 
 /** Cryptographically random idempotency key, e.g. payment_ab12cd34ef. */
 export function newIdempotencyKey(): string {

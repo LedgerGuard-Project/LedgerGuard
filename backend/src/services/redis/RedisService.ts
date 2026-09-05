@@ -34,6 +34,22 @@ class RedisService {
     return this.statusValue === 'connected' && this.client !== null;
   }
 
+  /**
+   * Measure Redis round-trip latency via PING (used by detailed health).
+   * Returns milliseconds, or null when Redis is disabled/unavailable.
+   */
+  async ping(): Promise<number | null> {
+    if (!this.isAvailable || !this.client) return null;
+    const start = performance.now();
+    try {
+      await this.client.ping();
+      return Math.round(performance.now() - start);
+    } catch (err) {
+      logger.warn(`Redis ping failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
   async connect(): Promise<RedisStatus> {
     if (!config.redisEnabled) {
       this.statusValue = 'disabled';

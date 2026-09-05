@@ -61,6 +61,35 @@ export enum AuditAction {
   FinancialPeriodCreated = 'financial_period_created',
   FinancialPeriodClosed = 'financial_period_closed',
   FinancialPeriodReopened = 'financial_period_reopened',
+  // ---- Payment / reconciliation exceptions ----
+  ExceptionCreated = 'exception_created',
+  ExceptionAssigned = 'exception_assigned',
+  ExceptionInvestigating = 'exception_investigating',
+  ExceptionResolved = 'exception_resolved',
+  ExceptionReopened = 'exception_reopened',
+  // ---- Billing rules ----
+  BillingRuleCreated = 'billing_rule_created',
+  BillingRuleUpdated = 'billing_rule_updated',
+  BillingRuleDeleted = 'billing_rule_deleted',
+  BillingRuleStatusChanged = 'billing_rule_status_changed',
+  // ---- Staff actions on communication center ----
+  CommunicationCreated = 'communication_created',
+  CommunicationRetried = 'communication_retried',
+  // ---- Saved views ----
+  SavedViewCreated = 'saved_view_created',
+  SavedViewDeleted = 'saved_view_deleted',
+  // ---- Compliance evidence ----
+  ComplianceEvidenceGenerated = 'compliance_evidence_generated',
+  // ---- API keys ----
+  ApiKeyCreated = 'api_key_created',
+  ApiKeyRevoked = 'api_key_revoked',
+  ApiKeyRotated = 'api_key_rotated',
+  // ---- Webhooks ----
+  WebhookEndpointCreated = 'webhook_endpoint_created',
+  WebhookEndpointUpdated = 'webhook_endpoint_updated',
+  WebhookSecretRotated = 'webhook_secret_rotated',
+  WebhookDeliveryRetried = 'webhook_delivery_retried',
+  WebhookTested = 'webhook_tested',
 }
 
 export interface AuditLogEntry {

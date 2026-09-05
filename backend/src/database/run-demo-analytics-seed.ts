@@ -25,6 +25,7 @@ const DEMO_CUSTOMERS = [
 interface DemoTx {
   transactionId: string; tenantId: string; customerId: string; accountId: string;
   invoiceId?: string; amountMinor: number; currency: string; type: string; status: string;
+  idempotencyKey?: string;
   paymentMethod?: string; failureReason?: string; description?: string;
   createdAt: Date; completedAt?: Date;
 }

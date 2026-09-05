@@ -14,6 +14,23 @@ import { buildCreditNoteModel, type CreditNoteDocument } from './CreditNote';
 import { buildDebitNoteModel, type DebitNoteDocument } from './DebitNote';
 import { buildApprovalRequestModel, type ApprovalRequestDocument } from './ApprovalRequest';
 import { buildFinancialPeriodModel, type FinancialPeriodDocument } from './FinancialPeriod';
+import {
+  buildPaymentExceptionModel,
+  type PaymentExceptionDocument,
+} from './PaymentException';
+import {
+  buildWebhookDeliveryModel,
+  buildWebhookEndpointModel,
+  type WebhookDeliveryDocument,
+  type WebhookEndpointDocument,
+} from './Webhook';
+import { buildBillingRuleModel, type BillingRuleDocument } from './BillingRule';
+import { buildCommunicationLogModel, type CommunicationLogDocument } from './CommunicationLog';
+import { buildSavedViewModel, type SavedViewDocument } from './SavedView';
+import {
+  buildComplianceEvidenceModel,
+  type ComplianceEvidenceDocument,
+} from './ComplianceEvidence';
 
 /** All tenant-scoped billing models bound to one dedicated tenant connection. */
 export interface BillingModels {
@@ -32,6 +49,13 @@ export interface BillingModels {
   DebitNote: Model<DebitNoteDocument>;
   ApprovalRequest: Model<ApprovalRequestDocument>;
   FinancialPeriod: Model<FinancialPeriodDocument>;
+  PaymentException: Model<PaymentExceptionDocument>;
+  WebhookEndpoint: Model<WebhookEndpointDocument>;
+  WebhookDelivery: Model<WebhookDeliveryDocument>;
+  BillingRule: Model<BillingRuleDocument>;
+  CommunicationLog: Model<CommunicationLogDocument>;
+  SavedView: Model<SavedViewDocument>;
+  ComplianceEvidence: Model<ComplianceEvidenceDocument>;
 }
 
 export function createBillingModels(connection: Connection): BillingModels {
@@ -51,5 +75,12 @@ export function createBillingModels(connection: Connection): BillingModels {
     DebitNote: buildDebitNoteModel(connection),
     ApprovalRequest: buildApprovalRequestModel(connection),
     FinancialPeriod: buildFinancialPeriodModel(connection),
+    PaymentException: buildPaymentExceptionModel(connection),
+    WebhookEndpoint: buildWebhookEndpointModel(connection),
+    WebhookDelivery: buildWebhookDeliveryModel(connection),
+    BillingRule: buildBillingRuleModel(connection),
+    CommunicationLog: buildCommunicationLogModel(connection),
+    SavedView: buildSavedViewModel(connection),
+    ComplianceEvidence: buildComplianceEvidenceModel(connection),
   };
 }

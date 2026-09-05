@@ -12,6 +12,12 @@ import {
   Receipt,
   Bell,
   Scale,
+  BarChart3,
+  Activity,
+  ListChecks,
+  ShieldAlert,
+  Code2,
+  CalendarCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -28,13 +34,19 @@ interface NavItem {
 }
 
 function buildNav(role: UserRole | undefined): NavItem[] {
-    const items: NavItem[] = [
+const items: NavItem[] = [
     { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard, roles: [] },
         { name: 'Billing', to: '/billing', icon: Receipt, roles: [] },
-        { name: 'Reconciliation', to: '/billing/reconciliation', icon: Scale, roles: [UserRole.FinanceManager] },
+    { name: 'Analytics', to: '/analytics', icon: BarChart3, roles: [] },
+    { name: 'Reconciliation', to: '/billing/reconciliation', icon: Scale, roles: [UserRole.FinanceManager] },
     { name: 'Notifications', to: '/billing/notifications', icon: Bell, roles: [] },
+    { name: 'Exceptions', to: '/reconciliation/exceptions', icon: ShieldAlert, roles: [UserRole.FinanceManager] },
+    { name: 'Operations', to: '/operations', icon: ListChecks, roles: [] },
+    { name: 'Month-End Close', to: '/close', icon: CalendarCheck, roles: [UserRole.CompanyAdmin] },
+    { name: 'Developer', to: '/developer', icon: Code2, roles: [] },
     { name: 'Team', to: '/team', icon: Users, roles: [UserRole.CompanyAdmin] },
     { name: 'Organizations', to: '/organizations', icon: Building, roles: [UserRole.SuperAdmin] },
+    { name: 'System Health', to: '/system/health', icon: Activity, roles: [UserRole.SuperAdmin] },
     { name: 'Profile', to: '/profile', icon: User, roles: [] },
     { name: 'Settings', to: '/settings', icon: Settings, roles: [] },
   ];
@@ -49,7 +61,7 @@ const BottomNav = ({ items }: { items: NavItem[] }) => {
       <div className="flex items-center justify-around py-1.5">
         {visible.map((it) => {
           const Icon = it.icon;
-          const active = location.pathname === it.to;
+          const active = location.pathname === it.to || location.pathname.startsWith(`${it.to}/`);
           return (
             <Link
               key={it.to}
@@ -95,7 +107,7 @@ export const AppLayout = () => {
       <nav className="mt-4 flex flex-col gap-1">
         {nav.map((it) => {
           const Icon = it.icon;
-          const active = location.pathname === it.to;
+          const active = location.pathname === it.to || location.pathname.startsWith(`${it.to}/`);
           return (
             <Link
               key={it.to}
@@ -153,7 +165,7 @@ export const AppLayout = () => {
               <Menu size={20} />
             </button>
             <span className="hidden sm:block text-sm font-medium text-ink-600 dark:text-ink-300">
-              {nav.find((n) => n.to === location.pathname)?.name ?? 'Dashboard'}
+              {nav.find((n) => location.pathname === n.to || location.pathname.startsWith(`${n.to}/`))?.name ?? 'Dashboard'}
             </span>
           </div>
                     <div className="flex items-center gap-2">

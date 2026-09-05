@@ -64,4 +64,17 @@ export const queryKeys = {
   // ---- Recurring plan preview ----
   recurringPlanDetail: (planId?: string) => ['billing', 'recurring-plan', planId ?? 'list'] as const,
   recurringPreview: (planId?: string) => ['billing', 'recurring-preview', planId ?? 'list'] as const,
+
+  // ---- Enterprise extension ----
+  exceptions: {
+    base: ['billing', 'exceptions'] as const,
+    list: (params?: Record<string, unknown>) => listKey(queryKeys.exceptions.base, params),
+  },
+  operationsQueue: ['operations', 'queue'] as const,
+  closeDashboard: ['operations', 'close'] as const,
+  apiKeys: ['developer', 'api-keys'] as const,
+  webhooks: {
+    base: ['developer', 'webhooks'] as const,
+    deliveries: (endpointId?: string) => ['developer', 'webhooks', 'deliveries', endpointId ?? 'none'] as const,
+  },
 };

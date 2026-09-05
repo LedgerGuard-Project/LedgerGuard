@@ -42,8 +42,17 @@ export interface AppConfig {
   jwtRefreshExpiresIn: string;
   bcryptSaltRounds: number;
   corsOrigin: string;
-  rateLimitWindowMs: number;
+    rateLimitWindowMs: number;
   rateLimitMax: number;
+  /** Auth endpoint rate limit (login, register, refresh, logout). */
+  authRateLimitWindowMs: number;
+  authRateLimitMax: number;
+  /** Account lockout: after this many failures, lock for `lockoutDurationMs`. */
+  lockoutMaxAttempts: number;
+  lockoutWindowMs: number;
+  lockoutDurationMs: number;
+  /** Max total tenant DB connections in the pool. */
+  maxTenantConnections: number;
   logLevel: string;
   platforms: {
     adminEmail: string;
@@ -119,8 +128,14 @@ export const config: AppConfig = {
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
   bcryptSaltRounds: parseNumber(process.env.BCRYPT_SALT_ROUNDS, 10),
   corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
-  rateLimitWindowMs: parseNumber(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
+    rateLimitWindowMs: parseNumber(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
   rateLimitMax: parseNumber(process.env.RATE_LIMIT_MAX, 100),
+  authRateLimitWindowMs: parseNumber(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
+  authRateLimitMax: parseNumber(process.env.AUTH_RATE_LIMIT_MAX, 10),
+  lockoutMaxAttempts: parseNumber(process.env.LOCKOUT_MAX_ATTEMPTS, 5),
+  lockoutWindowMs: parseNumber(process.env.LOCKOUT_WINDOW_MS, 15 * 60 * 1000),
+  lockoutDurationMs: parseNumber(process.env.LOCKOUT_DURATION_MS, 15 * 60 * 1000),
+  maxTenantConnections: parseNumber(process.env.MAX_TENANT_CONNECTIONS, 50),
   logLevel: process.env.LOG_LEVEL ?? 'info',
   platforms: {
     adminEmail: process.env.PLATFORM_ADMIN_EMAIL ?? 'superadmin@ledgerguard.io',
@@ -148,3 +163,30 @@ export const config: AppConfig = {
 
 export const REFRESH_TOKEN_PREFIX = 'lg:refresh:';
 export const REFRESH_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+
+/**
+ * Validate that required production env vars are properly configured.
+ * In production, warn (not exit) so the operator can read the message,
+ * but in development we allow insecure dev defaults.
+ *
+ * NOTE: Uses console.warn (not the logger) to avoid a module cycle,
+ * since this module is imported by app.ts, which imports the logger.
+ */
+export function validateConfig(): void {
+  const issues: string[] = [];
+  if (config.env === 'production') {
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.startsWith('insecure-dev')) {
+      issues.push('JWT_SECRET must be set to a long random value in production');
+    }
+    if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET.startsWith('insecure-dev')) {
+      issues.push('JWT_REFRESH_SECRET must be set to a long random value in production');
+    }
+    if (!process.env.MONGO_URI || process.env.MONGO_URI.includes('localhost')) {
+      issues.push('MONGO_URI should not be localhost in production');
+    }
+  }
+  for (const issue of issues) {
+    // eslint-disable-next-line no-console
+    console.warn(`[config] ${issue}`);
+  }
+}

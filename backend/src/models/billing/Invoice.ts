@@ -35,6 +35,8 @@ export interface InvoiceDocument extends Document {
   taxRateId?: string;
   /** Jurisdiction/region code snapshotted at invoicing, e.g. "GST", "VAT-EU". */
   taxJurisdiction?: string;
+  /** Billing-rule effects applied at creation (transparent server-side math). */
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,6 +73,7 @@ const invoiceSchema = new Schema<InvoiceDocument>(
         notes: { type: String, trim: true, maxlength: 1000 },
     taxRateId: { type: String, trim: true },
     taxJurisdiction: { type: String, trim: true },
+    metadata: { type: Schema.Types.Mixed },
   },
   { timestamps: true },
 );

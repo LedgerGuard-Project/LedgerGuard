@@ -3,6 +3,7 @@ import { z } from 'zod';
 import * as controller from '../controllers/auth.controller';
 import { validate } from '../middleware/validate';
 import { authenticate } from '../middleware/auth';
+import { authRateLimiter } from '../middleware/authRateLimit';
 
 const router = Router();
 
@@ -31,10 +32,10 @@ const refreshSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
-router.post('/register', validate(registerSchema), controller.register);
-router.post('/login', validate(loginSchema), controller.login);
-router.post('/refresh', validate(refreshSchema), controller.refresh);
-router.post('/logout', validate(refreshSchema), controller.logout);
+router.post('/register', authRateLimiter, validate(registerSchema), controller.register);
+router.post('/login', authRateLimiter, validate(loginSchema), controller.login);
+router.post('/refresh', authRateLimiter, validate(refreshSchema), controller.refresh);
+router.post('/logout', authRateLimiter, validate(refreshSchema), controller.logout);
 router.get('/me', authenticate, controller.me);
 
 export default router;

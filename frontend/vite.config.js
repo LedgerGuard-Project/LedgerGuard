@@ -16,12 +16,12 @@ export default defineConfig({
         port: 5173,
         proxy: {
             '/api': {
-                target: 'http://localhost:4000',
+                target: 'http://127.0.0.1:4000',
                 changeOrigin: true,
             },
             // Forward Socket.IO handshake + upgrades so realtime events reach the backend in dev.
             '/socket.io': {
-                target: 'http://localhost:4000',
+                target: 'http://127.0.0.1:4000',
                 changeOrigin: true,
                 ws: true,
                 secure: false,
@@ -31,5 +31,34 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         sourcemap: false,
+        rollupOptions: {
+            output: {
+                /**
+                 * Vendor chunk splitting (Phase 4, Part 48):
+                 * - Keeps each initial-load chunk below the 500 kB Rollup warning
+                 * - Long-term caching: vendor hashes change only when deps change
+                 * - Parallel fetch of independent vendor chunks
+                 * Analytics pages stay route-level lazy via React.lazy.
+                 */
+                manualChunks: function (id) {
+                    if (!id.includes('node_modules'))
+                        return undefined;
+                    if (id.includes('react-dom') || id.match(/[\\/]node_modules[\\/]react[\\/]/) || id.includes('scheduler')) {
+                        return 'react-vendor';
+                    }
+                    if (id.includes('react-router'))
+                        return 'router';
+                    if (id.includes('framer-motion'))
+                        return 'motion';
+                    if (id.includes('socket.io-client') || id.includes('engine.io-client'))
+                        return 'realtime';
+                    if (id.includes('@tanstack') || id.includes('axios'))
+                        return 'data';
+                    if (id.includes('lucide-react') || id.includes('zustand'))
+                        return 'ui';
+                    return 'vendors-misc';
+                },
+            },
+        },
     },
 });

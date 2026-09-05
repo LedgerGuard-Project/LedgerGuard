@@ -35,8 +35,12 @@ export function errorHandler(
       statusCode = maybe.statusCode;
       code = maybe.code ?? 'ERROR';
       details = (maybe as { details?: unknown }).details;
+      // Intentional messages from typed errors are safe to surface.
+      message = err.message;
+    } else if (statusCode >= 500) {
+      // Unknown/internal failures: never leak err.message to clients.
+      message = 'Internal server error';
     }
-    message = err.message;
   }
 
   if (statusCode >= 500) {
@@ -45,7 +49,13 @@ export function errorHandler(
 
   const payload: ApiResponse<never> = {
     success: false,
-    error: { code, message, ...(details !== undefined ? { details } : {}) },
+    error: {
+      code,
+      message,
+      // Correlation ID from the requestId middleware (Part 12/14).
+      requestId: req.id,
+      ...(details !== undefined ? { details } : {}),
+    },
   };
 
   // Never expose stack traces, DB URIs or internal details to API clients —

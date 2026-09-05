@@ -13,7 +13,8 @@
     "seed:analytics": "tsx src/database/run-demo-analytics-seed.ts",
     "verify:analytics": "tsx scripts/verify-analytics.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "tsc -p tsconfig.json --noEmit"
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test tests/**/*.test.ts"
   },
   "dependencies": {
     "@ledgerguard/shared": "1.0.0",
