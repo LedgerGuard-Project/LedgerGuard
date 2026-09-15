@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import * as dns from 'node:dns';
 
 export interface AppConfig {
   env: 'development' | 'production' | 'test';
@@ -94,6 +95,25 @@ function parseNumber(value: string | undefined, fallback: number): number {
 
 const mongoUriFull = process.env.MONGO_URI ?? 'mongodb://localhost:27017/ledgerguard_global';
 const globalDbName = process.env.GLOBAL_DB_NAME ?? 'ledgerguard_global';
+
+/**
+ * Node's built-in DNS resolver (node:dns) is what the MongoDB driver uses to
+ * resolve `mongodb+srv://` SRV records. On some Windows machines it can pick
+ * a broken loopback resolver (e.g. 127.0.0.1) from the OS and then fail EVERY
+ * query with `ECONNREFUSED querySrv _mongodb._tcp.<cluster>.mongodb.net`,
+ * even though the OS resolver (nslookup) works fine.
+ * When DNS_SERVERS is set (comma-separated host:port or plain IP list), pin
+ * Node's resolver to those servers BEFORE any database connection is made.
+ * Leave it unset to keep the system default - no changes are made then.
+ */
+const dnsServers = process.env.DNS_SERVERS ?? '';
+if (dnsServers) {
+  try {
+    dns.setServers(dnsServers.split(',').map((s) => s.trim()).filter(Boolean));
+  } catch {
+    // Runtimes without dns.setServers simply keep their default resolver.
+  }
+}
 
 /** Strip the trailing "/<db>" so we can build per-tenant database URIs. */
 function baseOf(uri: string): string {
